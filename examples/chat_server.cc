@@ -5,7 +5,7 @@ using namespace std;
 using namespace handy;
 
 int main(int argc, const char *argv[]) {
-//    setloglevel("TRACE");
+    setloglevel("TRACE");
     map<intptr_t, TcpConnPtr> users;  //生命周期比连接更长，必须放在Base前
     EventBase base;
     Signal::signal(SIGINT, [&] { base.exit(); });
