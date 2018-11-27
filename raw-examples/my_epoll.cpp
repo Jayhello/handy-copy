@@ -96,6 +96,9 @@ void testServer(){
     ret = listen(sockFd, 100);
     fatalif(ret < 0, "listen socket failed %d %s", errno, strerror(errno));
 
+    info("now i will sleep 100S");
+    sleep(100);
+
     ThreadPool tp(5);
 
     while(true){
@@ -113,6 +116,7 @@ void testServer(){
 
 
 int main(){
+
     testServer();
 
     return 0;

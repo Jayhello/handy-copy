@@ -8,7 +8,6 @@
 #include <netinet/in.h>
 #include <strings.h>
 #include <arpa/inet.h>
-
 #include <handy/handy.h>
 
 using namespace handy;
@@ -25,13 +24,11 @@ sockaddr_in getSockAddr(const string& ip, uint16_t port){
     return localAddr;
 }
 
-void testClient(){
+void testClient(uint16_t clientPort = 8888){
     int sockFd = socket(AF_INET, SOCK_STREAM, 0);
     fatalif(sockFd < 0, "socket failed %d %s", errno, strerror(errno));
 
-
     string ip = "127.0.0.1";
-    uint16_t clientPort = 8888;
     Ip4Addr localAddr(ip, clientPort);
 
     int ret = bind(sockFd, (struct sockaddr*)&localAddr.getAddr(), sizeof(localAddr.getAddr()));
@@ -46,6 +43,8 @@ void testClient(){
     int count = 0;
     char buf[200];
     memset(buf, '\0', 200);
+
+    info("now work with port %d", clientPort);
 
     while(1){
         string msg = "msg: " + to_string(count++);
@@ -76,7 +75,22 @@ void testClient(){
 
 int main(){
 
-    testClient();
+    ThreadPool tp(5, 10, false);
 
+    for (int i = 0; i < 10; ++i) {
+        info("now add task %d", i);
+        tp.addTask(std::bind(testClient, 8888 + i));
+    }
+
+    info("now start thread pool");
+    tp.start();
+
+    info("now join thread pool");
+
+    sleep(3);
+    tp.exit();
+    tp.join();
+
+    info("--------problem client exit-----------");
     return 0;
 }
