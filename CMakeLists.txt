@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.7)
+
 add_definitions(-DOS_MACOSX)
 project(echo)
 
 include_directories("${PROJECT_SOURCE_DIR}")
 set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_FLAGS -pthread)
 
-set(CMAKE_CXX_FLAGS -pthread)
 
 aux_source_directory(handy HANDY_SRCS)
 add_library(handy
@@ -71,6 +72,10 @@ add_executable(write-on-empty
         examples/write-on-empty.cc)
 target_link_libraries(write-on-empty handy)
 
+add_executable(chat_server
+        examples/chat_server.cc)
+target_link_libraries(chat_server handy)
+
 add_executable(10m-cli
         10m/10m-cli.cc)
 target_link_libraries(10m-cli handy)
@@ -98,7 +103,3 @@ target_link_libraries(raw_epoll_2 handy)
 add_executable(select_example_1
         raw-examples/select_example.cpp)
 target_link_libraries(select_example_1 handy)
-
-#add_executable(kqueue
-#        raw-examples/kqueue.cc)
-#target_link_libraries(kqueue handy)
