@@ -13,9 +13,10 @@ using namespace handy;
 void test_single_server(){
     int serverFd = socket(AF_INET, SOCK_STREAM, 0);
     fatalif(serverFd < 0, "socket failed %d %s", errno, strerror(errno));
+    net::setReuseAddr(serverFd);
 
-    string ip = "127.0.0.1";
-    uint16_t port = 8000;
+    string ip = "172.25.53.26";
+    uint16_t port = 8888;
     Ip4Addr  localAddr(ip, port);
 
     int ret = bind(serverFd, (struct sockaddr*)&localAddr.getAddr(),
@@ -38,6 +39,8 @@ void test_single_server(){
     timeval tv;
     const int BUF_SIZE = 200;
 
+    int idx = 0;
+
     while(1) {
         // 把可读文件描述符的集合清空
         FD_ZERO(&fds);
@@ -58,20 +61,35 @@ void test_single_server(){
             info("no input from server, client no message, so keep waiting.....");
         } else{
 
+            if(0 == idx++ % 2){
+                info("idx: %d even, so continue to next", idx);
+                continue;
+            }
+
             if(FD_ISSET(cFd, &fds)){
                 char recvBuf[BUF_SIZE];
+                memset(recvBuf, 0, sizeof(recvBuf));
                 int len = recv(cFd, recvBuf, sizeof(recvBuf), 0);
+
+                if(len <= 0){
+                    info("recv len: %d, errno: %d, msg: %s", len, errno, strerror(errno));
+
+                    len = send(cFd, recvBuf, strlen(recvBuf), 0);
+                    info("send %d bytes to server, , errno: %d, msg: %s", len, errno, strerror(errno));
+                    sleep(1);
+                }
+
                 info("recv len: %d, msg: %s", len, recvBuf);
             }
 
             if(FD_ISSET(0, &fds)){
                 char sendBuf[BUF_SIZE];
+                memset(sendBuf, 0, sizeof(sendBuf));
                 cin>>sendBuf;
 
                 int len = send(cFd, sendBuf, strlen(sendBuf), 0);
                 info("send %d bytes to server", len);
 
-                memset(sendBuf, 0, sizeof(sendBuf));
             }
         }
 
@@ -204,7 +222,7 @@ void test_multi_server(){
     fatalif(svrFd<0, "sock failed %d, %s", errno, strerror(errno));
     sFd.insert(svrFd);
 
-    net::setNonBlock(svrFd);
+//    net::setNonBlock(svrFd);
     net::setReuseAddr(svrFd);
 
     string ip = "172.25.53.26";
@@ -240,10 +258,13 @@ void test_multi_server(){
         } else if(num == 0){
             infoClients();
         } else{
+            info("select return %d fd nums", num);
+
             for(int fd:sFd){
                 if(FD_ISSET(fd, &fds)){
-                    tp.addTask(std::bind(processFd, fd));
-//                    processFd(fd);
+                    info("is fd set %d", fd);
+//                    tp.addTask(std::bind(processFd, fd));
+                    processFd(fd);
                 }
 
             }
@@ -251,14 +272,37 @@ void test_multi_server(){
     }
 }
 
+list<ClientInfo> lstCi;
+std::mutex mtx;
+
+void test_insert_ci(const ClientInfo& ci){
+    std::lock_guard<std::mutex> lock(mtx);
+    lstCi.push_back(ci);
+    info("lst size: %d", lstCi.size());
+}
+
 void test_thread_pool(){
 
+    ThreadPool tp(5);
+
+    for (int i = 0; i < 1000; ++i) {
+        info("loop %d", i);
+        ClientInfo ci(to_string(i), i, i);
+
+        tp.addTask(std::bind(test_insert_ci, ci));
+
+        info("now i sleep 10 seconds");
+        sleep(10);
+    }
 }
 
 int main(){
-//    test_single_server();
+    test_single_server();
 
-    test_multi_server();
+//    test_multi_server();
+
+//    test_thread_pool();
+
 
 
 

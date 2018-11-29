@@ -4,7 +4,8 @@ using namespace std;
 using namespace handy;
 
 int main(int argc, const char *argv[]) {
-    Logger::getLogger().setLogLevel(Logger::LTRACE);
+//    Logger::getLogger().setLogLevel(Logger::LTRACE);
+    Logger::getLogger().setLogLevel(Logger::LINFO);
     EventBase base;
     Signal::signal(SIGINT, [&] { base.exit(); });
 

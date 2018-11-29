@@ -108,3 +108,16 @@ add_executable(select_server_1
         raw-examples/select_server.cpp
         )
 target_link_libraries(select_server_1 handy)
+
+
+# ------------------ basic socket test --------------------------------------
+
+add_executable(basic_sock_server_test
+        raw-examples/basic_sock_server.cpp
+        )
+target_link_libraries(basic_sock_server_test handy)
+
+add_executable(basic_sock_client_test
+        raw-examples/basic_sock_client.cpp
+        )
+target_link_libraries(basic_sock_client_test handy)
