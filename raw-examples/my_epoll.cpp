@@ -22,20 +22,18 @@ using namespace std;
  * Note: Simple test for max socket num.
  */
 void testMaxSockFd(){
-    vector<int> vecFd(40);
+    vector<int> vecFd(40000);
 
     for (int i = 0; i < vecFd.size(); ++i) {
         int fd = socket(AF_INET, SOCK_STREAM, 0);
 
-        if(fd < 0){
-            cerr<<i<<", get error fd: "<<fd<<endl;
-            return;
-            // 4093, get error fd: -1
-        }
-        cerr<<i<<", get fd: "<<fd<<endl;
+        fatalif(fd<0, "create sock %d, errno: %d, %s:",i+2, errno, strerror(errno));
+        // create sock 4093, errno: 24, Too many open files:
+
         vecFd[i] = fd;
     }
 }
+
 
 
 sockaddr_in getSockAddr(const string& ip, uint16_t port){
@@ -116,8 +114,9 @@ void testServer(){
 
 
 int main(){
+    testMaxSockFd();
 
-    testServer();
+//    testServer();
 
     return 0;
 }

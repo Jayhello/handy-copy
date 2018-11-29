@@ -103,3 +103,8 @@ target_link_libraries(raw_epoll_2 handy)
 add_executable(select_example_1
         raw-examples/select_example.cpp)
 target_link_libraries(select_example_1 handy)
+
+add_executable(select_server_1
+        raw-examples/select_server.cpp
+        )
+target_link_libraries(select_server_1 handy)
