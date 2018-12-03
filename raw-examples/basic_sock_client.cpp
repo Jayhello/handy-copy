@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+
 #include "handy/handy.h"
 #include <fcntl.h>
 using namespace handy;
@@ -82,9 +83,81 @@ void test_full_sock_buf(){
 //}
 
 
-int main(){
-    test_full_sock_buf();
+/*
+ * Test socket fd read, write ready condition.
+ *
+ */
+void test_connect_fd_write_read_cond(){
+//    string ip = "220.181.57.216";
+    string ip = "172.25.53.26";
+//    string ip = "127.0.0.1";
+    uint16_t port = 8888;
+    Ip4Addr addr(ip, port);
 
+    int sockFd = socket(AF_INET, SOCK_STREAM, 0);
+    fatalif(sockFd<0, "create socket error:%d, %s", errno, strerror(errno));
+
+    net::setNonBlock(sockFd);
+
+    int ret = connect(sockFd, (struct sockaddr*)&addr.getAddr(), sizeof(addr.getAddr()));
+//    fatalif(ret < 0, "connect failed %d %s", errno, strerror(errno));
+
+    info("create socket %d, connect ret: %d, errno: %d, %s", sockFd, ret, errno, strerror(errno));
+
+    fd_set rFds, wFds;
+    timeval tv;
+
+    int err = 0;
+    unsigned int errLen = sizeof err;
+
+    while(1){
+        tv.tv_sec = 10;
+
+        FD_ZERO(&rFds);
+        FD_SET(sockFd, &rFds);
+
+        FD_ZERO(&wFds);
+        FD_SET(sockFd, &wFds);
+
+        int num = select(sockFd + 1, &rFds, &wFds, NULL, &tv);
+
+        if(num < 0){
+            error("select error, errno: %d, %s", errno, strerror(errno));
+            break;
+        } else if(0 == num){
+            info("select timeout");
+        } else{
+
+            ret = getsockopt(sockFd, SOL_SOCKET, SO_ERROR, &err, &errLen);
+            warn("getsockopt(SO_ERROR): ret: %d, err: %d, errno:%d, %s", ret, err, errno, strerror(errno));
+
+//            if (getsockopt(sockFd, SOL_SOCKET, SO_ERROR, &err, &errLen) == -1) {
+//                warn("getsockopt(SO_ERROR): %s", strerror(errno));
+//                close(sockFd);
+//                break;
+//            }
+
+            if(FD_ISSET(sockFd, &rFds)){
+                info("read fd ready, err: %d, errno: %d, %s", err, errno, strerror(errno));
+            }
+
+            if(FD_ISSET(sockFd, &wFds)){
+                info("write fd ready, err: %d, errno: %d, %s", err, errno, strerror(errno));
+            }
+
+            sleep(3);
+        }
+
+    }
+
+}
+
+
+int main(){
+//    test_full_sock_buf();
+    test_connect_fd_write_read_cond();
+
+    std::function<void()> fun;
 
     return 0;
 }

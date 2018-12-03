@@ -8,7 +8,7 @@ int main(int argc, const char *argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&] { base.exit(); });
     TcpConnPtr con = TcpConn::createConnection(&base, "127.0.0.1", 2099, 3000);
-    con->setReconnectInterval(3000);
+//    con->setReconnectInterval(3000);
 
     con->onMsg(new LengthCodec,
                [](const TcpConnPtr &con, Slice msg) {
