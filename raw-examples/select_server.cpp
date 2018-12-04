@@ -142,6 +142,18 @@ void infoClients(){
 
 }
 
+void addClientFd(int fd, const Ip4Addr& addr){
+    std::lock_guard<std::mutex> lock(gMtx);
+    sFd.insert(fd);
+    mFdClient.emplace(fd, ClientInfo(addr, fd));
+}
+
+void removeClientFd(int fd){
+    std::lock_guard<std::mutex> lock(gMtx);
+    sFd.erase(fd);
+    mFdClient.erase(fd);
+}
+
 void handAccept(int svrFd){
     struct sockaddr_in raddr;
     socklen_t rsz = sizeof(raddr);
@@ -190,13 +202,15 @@ void handRead(int acFd){
         else
             info("client: %s, close", mFdClient.find(acFd)->second.getClientInfo().c_str());
 
+        {
+            std::lock_guard<std::mutex> lock(gMtx);
+            close(acFd);
+            mFdClient.erase(acFd);
+            sFd.erase(acFd);
+        }
+
         const char *welcome = "%s: good I leave out";
         string msg = util::format(welcome, mFdClient.find(acFd)->second.getClientInfo().c_str());
-
-        close(acFd);
-        mFdClient.erase(acFd);
-        sFd.erase(acFd);
-
         boardcast(msg);
 
     } else if(len > 0){
@@ -297,9 +311,9 @@ void test_thread_pool(){
 }
 
 int main(){
-    test_single_server();
+//    test_single_server();
 
-//    test_multi_server();
+    test_multi_server();
 
 //    test_thread_pool();
 

@@ -153,9 +153,38 @@ void test_connect_fd_write_read_cond(){
 }
 
 
+void test_get_sock(){
+    int err = 0, ret = 0;
+    unsigned int errLen = sizeof err;
+    ret = getsockopt(4, SOL_SOCKET, SO_ERROR, &err, &errLen);
+
+    info("getsockopt: ret: %d, err:%d, errno:%d, :%s", ret, err, errno, strerror(errno));
+    // getsockopt: ret: -1, err:0, errno:9, :Bad file descriptor
+
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errLen);
+    info("fd: %d, ret: %d, err:%d, errno:%d, :%s", fd, ret, err, errno, strerror(errno));
+    // fd: 3, ret: 0, err:0, errno:9, :Bad file descriptor
+
+    // receive buf size, 32KB
+    int bufLen=32*1024;
+    setsockopt(fd, SOL_SOCKET,SO_RCVBUF,(const char*)&bufLen,sizeof(int));
+
+
+    int to=1000;//1 second
+    //send timeout
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&to, sizeof(to));
+    //receive timeout
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&to, sizeof(to));
+
+    int nBuf=0;
+    setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char *)&nBuf, sizeof(nBuf));
+}
+
 int main(){
 //    test_full_sock_buf();
-    test_connect_fd_write_read_cond();
+//    test_connect_fd_write_read_cond();
+    test_get_sock();
 
     std::function<void()> fun;
 

@@ -51,11 +51,11 @@ void chat_client(){
     int sockFd = socket(AF_INET, SOCK_STREAM, 0);
     fatalif(sockFd<0, "socket failed %d %s", errno, strerror(errno));
 
-//    uint16_t serverPort = 8888;
-//    string ip = "172.25.53.26";
+    uint16_t serverPort = 8888;
+    string ip = "172.25.53.26";
 
-    uint16_t serverPort = 2099;
-    string ip = "127.0.0.1";
+//    uint16_t serverPort = 2099;
+//    string ip = "127.0.0.1";
 
     Ip4Addr serverAddr(ip, serverPort);
 
