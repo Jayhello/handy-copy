@@ -14,7 +14,8 @@ using namespace std;
  *
  */
 void test_full_sock_buf(){
-    string ip = "172.25.53.26";
+//    string ip = "172.25.53.26";
+    string ip = "127.0.0.1";
     uint16_t port = 8888;
 
     int svrFd = socket(AF_INET, SOCK_STREAM, 0);

@@ -15,7 +15,8 @@ void test_single_server(){
     fatalif(serverFd < 0, "socket failed %d %s", errno, strerror(errno));
     net::setReuseAddr(serverFd);
 
-    string ip = "172.25.53.26";
+//    string ip = "172.25.53.26";
+    string ip = "127.0.0.1";
     uint16_t port = 8888;
     Ip4Addr  localAddr(ip, port);
 
@@ -50,7 +51,7 @@ void test_single_server(){
         FD_SET(cFd, &fds);
 
         tv.tv_sec = 4;
-        tv.tv_usec = 500;
+        tv.tv_usec = 1000;
 
         ret = select(cFd+1, &fds, NULL, NULL, &tv);
 
@@ -152,6 +153,7 @@ void removeClientFd(int fd){
     std::lock_guard<std::mutex> lock(gMtx);
     sFd.erase(fd);
     mFdClient.erase(fd);
+    close(fd);
 }
 
 void handAccept(int svrFd){
@@ -196,21 +198,16 @@ void handRead(int acFd){
 
     if(len <= 0){
         if(len < 0){
-            error("recv error: errno: %d, %s, server exit", errno, strerror(errno));
+            error("recv error: errno: %d, %s", errno, strerror(errno));
             return;
         }
         else
             info("client: %s, close", mFdClient.find(acFd)->second.getClientInfo().c_str());
 
-        {
-            std::lock_guard<std::mutex> lock(gMtx);
-            close(acFd);
-            mFdClient.erase(acFd);
-            sFd.erase(acFd);
-        }
-
         const char *welcome = "%s: good I leave out";
         string msg = util::format(welcome, mFdClient.find(acFd)->second.getClientInfo().c_str());
+
+        removeClientFd(acFd);
         boardcast(msg);
 
     } else if(len > 0){
@@ -219,7 +216,6 @@ void handRead(int acFd){
         msg = mFdClient.find(acFd)->second.getClientInfo() + ": " + msg;
         boardcast(msg);
     }
-
 }
 
 void processFd(int acFd){
@@ -239,7 +235,8 @@ void test_multi_server(){
 //    net::setNonBlock(svrFd);
     net::setReuseAddr(svrFd);
 
-    string ip = "172.25.53.26";
+//    string ip = "172.25.53.26";
+    string ip = "127.0.0.1";
     uint16_t port = 8888;
     Ip4Addr  localAddr(ip, port);
 
@@ -249,6 +246,7 @@ void test_multi_server(){
 
     ret = listen(svrFd, 20000);
     fatalif(ret<0, "listen socket failed, %d, %s", errno, strerror(errno));
+    info("start server success %s", localAddr.toString().c_str());
 
     ThreadPool tp(1);
 
@@ -277,8 +275,8 @@ void test_multi_server(){
             for(int fd:sFd){
                 if(FD_ISSET(fd, &fds)){
                     info("is fd set %d", fd);
-//                    tp.addTask(std::bind(processFd, fd));
-                    processFd(fd);
+                    tp.addTask(std::bind(processFd, fd));
+                    // processFd(fd);
                 }
 
             }
@@ -316,7 +314,6 @@ int main(){
     test_multi_server();
 
 //    test_thread_pool();
-
 
 
 

@@ -52,10 +52,7 @@ void chat_client(){
     fatalif(sockFd<0, "socket failed %d %s", errno, strerror(errno));
 
     uint16_t serverPort = 8888;
-    string ip = "172.25.53.26";
-
-//    uint16_t serverPort = 2099;
-//    string ip = "127.0.0.1";
+    string ip = "127.0.0.1";
 
     Ip4Addr serverAddr(ip, serverPort);
 
@@ -73,8 +70,8 @@ void chat_client(){
         FD_ZERO(&fds);
         FD_SET(0, &fds);
 
-        tv.tv_sec = 3;
-        tv.tv_usec = 500;
+        tv.tv_sec = 10;
+        tv.tv_usec = 1000;
 
         // 把标准输入的文件描述符加入到集合中
         FD_SET(0, &fds);

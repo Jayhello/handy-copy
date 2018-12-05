@@ -14,7 +14,8 @@ using namespace std;
  *
  */
 void test_full_sock_buf(){
-    string ip = "172.25.53.26";
+//    string ip = "172.25.53.26";
+    string ip = "127.0.0.1";
     uint16_t port = 8888;
     Ip4Addr addr(ip, port);
 
@@ -89,8 +90,8 @@ void test_full_sock_buf(){
  */
 void test_connect_fd_write_read_cond(){
 //    string ip = "220.181.57.216";
-    string ip = "172.25.53.26";
-//    string ip = "127.0.0.1";
+//    string ip = "172.25.53.26";
+    string ip = "127.0.0.1";
     uint16_t port = 8888;
     Ip4Addr addr(ip, port);
 
@@ -170,7 +171,6 @@ void test_get_sock(){
     int bufLen=32*1024;
     setsockopt(fd, SOL_SOCKET,SO_RCVBUF,(const char*)&bufLen,sizeof(int));
 
-
     int to=1000;//1 second
     //send timeout
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&to, sizeof(to));
@@ -185,8 +185,6 @@ int main(){
 //    test_full_sock_buf();
 //    test_connect_fd_write_read_cond();
     test_get_sock();
-
-    std::function<void()> fun;
 
     return 0;
 }

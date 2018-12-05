@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.7)
+#cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
 
 add_definitions(-DOS_MACOSX)
 project(echo)
 
 include_directories("${PROJECT_SOURCE_DIR}")
+message("include dir: ${PROJECT_SOURCE_DIR}")
+
 set(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_FLAGS -pthread)
 
