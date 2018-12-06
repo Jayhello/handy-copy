@@ -264,29 +264,26 @@ void test_multi_server(){
         } else if(num == 0){
             infoClients();
         } else{
-            info("select return %d", num);
-
             for(int fd:sFd){
                 if(FD_ISSET(fd, &fds)){
                     info("is fd set %d", fd);
-//                    tp.addTask(std::bind(processFd, fd));
-//                     processFd(fd);
                      if(fd == svrFd){
                          struct sockaddr_in raddr;
                          socklen_t rsz = sizeof(raddr);
                          int newCFd = accept(svrFd, (struct sockaddr *) &raddr, &rsz);
+                         info("select return %d events, fd: %d, new accept newFd: ", num, fd, newCFd);
 //                         handAccept(newCFd, raddr);
                          tp.addTask(std::bind(handAccept, newCFd, std::ref(raddr)));
                      } else{
                          char buf[100];
                          memset(buf, 0, sizeof buf);
                          int len = recv(fd, buf, sizeof buf, 0);
+                         info("select return %d events, fd: %d, new data, len: %d", num, fd, len);
 //                         handRead(fd, buf, len);
                          tp.addTask(std::bind(handRead, fd, buf, len));
                      }
 
                 }
-
             }
         }
     }
