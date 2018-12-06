@@ -156,29 +156,20 @@ void removeClientFd(int fd){
     close(fd);
 }
 
-void handAccept(int svrFd){
-    struct sockaddr_in raddr;
-    socklen_t rsz = sizeof(raddr);
-
-    int newCFd = accept(svrFd, (struct sockaddr *) &raddr, &rsz);
-    if(newCFd<0){
+void handAccept(int fd, const sockaddr_in& addr){
+    if(fd<0){
         error("accept failed");
         return;
     }
 
+    Ip4Addr tmp(addr);
+    info("server fd:%d, client fd: %d, accept a connection from %s", svrFd, fd, tmp.toString().c_str());
 
-    Ip4Addr tmp(raddr);
-    info("server fd:%d, client fd: %d, accept a connection from %s", svrFd, newCFd, tmp.toString().c_str());
-
-    {
-        std::lock_guard<std::mutex> lock(gMtx);
-        sFd.insert(newCFd);
-//        mFdClient.emplace(newCFd, {tmp, newCFd});
-        mFdClient.emplace(newCFd, ClientInfo(tmp, newCFd));
-    }
+    addClientFd(fd, tmp);
 }
 
 void boardcast(const string& msg){
+    std::lock_guard<std::mutex> lock(gMtx);
     for(auto& item:mFdClient){
         int len = send(item.first, msg.data(), msg.size(), 0);
 
@@ -190,41 +181,40 @@ void boardcast(const string& msg){
 
 }
 
-void handRead(int acFd){
-    char buf[100];
-    memset(buf, 0, sizeof buf);
-
-    int len = recv(acFd, buf, sizeof buf, 0);
-
-    if(len <= 0){
-        if(len < 0){
-            error("recv error: errno: %d, %s", errno, strerror(errno));
-            return;
+void handRead(int acFd, char* buf, int len){
+    if(len >= 0){
+        string clientInfo;
+        {
+            std::lock_guard<std::mutex> lock(gMtx);
+            auto it = mFdClient.find(acFd);
+            if(it != mFdClient.end())
+                clientInfo = it->second.getClientInfo();
+            else
+                clientInfo = "error client";
         }
-        else
-            info("client: %s, close", mFdClient.find(acFd)->second.getClientInfo().c_str());
 
-        const char *welcome = "%s: good I leave out";
-        string msg = util::format(welcome, mFdClient.find(acFd)->second.getClientInfo().c_str());
+        if(0 == len){
+            const char *welcome = "%s: good I leave out";
+            string msg = util::format(welcome, clientInfo.c_str());
 
-        removeClientFd(acFd);
-        boardcast(msg);
-
-    } else if(len > 0){
-        string msg(buf, len);
-//        msg = util::format("%s: %s", mFdClient.find(acFd)->second.getClientInfo().c_str(), msg);
-        msg = mFdClient.find(acFd)->second.getClientInfo() + ": " + msg;
-        boardcast(msg);
-    }
-}
-
-void processFd(int acFd){
-    if(acFd == svrFd){
-        handAccept(svrFd);
+            removeClientFd(acFd);
+            boardcast(msg);
+        }else{
+            string msg = clientInfo + ": " + string(buf, len);
+            boardcast(msg);
+        }
     } else{
-        handRead(acFd);
+        error("recv error: errno: %d, %s", errno, strerror(errno));
     }
 }
+
+//void processFd(int acFd){
+//    if(acFd == svrFd){
+//        handAccept(svrFd);
+//    } else{
+//        handRead(acFd);
+//    }
+//}
 
 
 void test_multi_server(){
@@ -248,7 +238,7 @@ void test_multi_server(){
     fatalif(ret<0, "listen socket failed, %d, %s", errno, strerror(errno));
     info("start server success %s", localAddr.toString().c_str());
 
-    ThreadPool tp(1);
+    ThreadPool tp(5);
 
     fd_set fds;
     timeval tv;
@@ -256,9 +246,13 @@ void test_multi_server(){
     while(1){
         FD_ZERO(&fds);
 
-        for (int fd: sFd) {
-            FD_SET(fd, &fds);
+        {
+            std::lock_guard<std::mutex> lock(gMtx);
+            for (int fd: sFd) {
+                FD_SET(fd, &fds);
+            }
         }
+
 
         tv.tv_sec = 10;
 
@@ -270,13 +264,27 @@ void test_multi_server(){
         } else if(num == 0){
             infoClients();
         } else{
-            info("select return %d fd nums", num);
+            info("select return %d", num);
 
             for(int fd:sFd){
                 if(FD_ISSET(fd, &fds)){
                     info("is fd set %d", fd);
-                    tp.addTask(std::bind(processFd, fd));
-                    // processFd(fd);
+//                    tp.addTask(std::bind(processFd, fd));
+//                     processFd(fd);
+                     if(fd == svrFd){
+                         struct sockaddr_in raddr;
+                         socklen_t rsz = sizeof(raddr);
+                         int newCFd = accept(svrFd, (struct sockaddr *) &raddr, &rsz);
+//                         handAccept(newCFd, raddr);
+                         tp.addTask(std::bind(handAccept, newCFd, std::ref(raddr)));
+                     } else{
+                         char buf[100];
+                         memset(buf, 0, sizeof buf);
+                         int len = recv(fd, buf, sizeof buf, 0);
+//                         handRead(fd, buf, len);
+                         tp.addTask(std::bind(handRead, fd, buf, len));
+                     }
+
                 }
 
             }
