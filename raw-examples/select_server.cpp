@@ -317,7 +317,6 @@ void test_thread_pool(){
 }
 
 void test_thread_pool_arr(){
-
     auto lb_print = [](const char* str){
         info("print msg: %s, and i will sleep 2s", str);
         sleep(2);
