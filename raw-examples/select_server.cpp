@@ -323,23 +323,85 @@ void test_thread_pool_arr(){
         sleep(2);
     };
 
+    auto lb_print_2 = [](const string& str){
+        info("print msg: %s, and i will sleep 2s", str.size(), str.c_str());
+        sleep(2);
+    };
+
     ThreadPool tp(3);
 
     {
-        char arr[100];
-        memset(arr, 1, sizeof arr);
+        char arr[10];
+        memset(arr, '1', sizeof arr);
+        arr[9] = '\0';
+
         tp.addTask(std::bind(lb_print, arr));
         tp.addTask(std::bind(lb_print, arr));
+
+//        info("arr: %s", arr);
+//        tp.addTask(std::bind(lb_print_2, string(arr)));
+//        tp.addTask(std::bind(lb_print_2, string(arr)));
     }
+
+//    info("leave scope...., arr: %s", arr);
+    info("leave scope....");
 
     tp.exit();
     tp.join();
     info("ending....");
 }
 
+class BindScope{
+    public:
+        BindScope(int i=0):n_(i){
+            arr_ = new char[n_+1];
+            memset(arr_, '1', n_);
+            arr_[n_] = '\0';
+
+            info("BindScope ctor %d", n_);
+        }
+
+        ~BindScope(){
+            info("BindScope ~dtor %d", n_);
+            delete[] arr_;
+        }
+
+        void print()const{
+            info("do print %d, %s", n_, arr_);
+        }
+
+    int n_;
+    char* arr_;
+};
+
+void test_thread_pool_scope(){
+    auto lb_print = [](const BindScope& bs){
+        bs.print();
+    };
+
+    ThreadPool tp(3);
+
+    {
+        BindScope bs(4);
+        bs.print();
+
+        tp.addTask(std::bind(lb_print, std::ref(bs)));
+        tp.addTask(std::bind(lb_print, std::ref(bs)));
+
+//        tp.addTask(std::bind(lb_print, bs));
+//        tp.addTask(std::bind(lb_print, bs));
+    }
+
+    info("out scope");
+    tp.exit();
+    tp.join();
+    info("ending.........");
+}
+
 
 int main(){
-    test_thread_pool_arr();
+    test_thread_pool_scope();
+//    test_thread_pool_arr();
 
 //    test_single_server();
 
