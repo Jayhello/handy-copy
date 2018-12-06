@@ -172,6 +172,7 @@ void boardcast(const string& msg){
     std::lock_guard<std::mutex> lock(gMtx);
     for(auto& item:mFdClient){
         int len = send(item.first, msg.data(), msg.size(), 0);
+        info("sending %s, len: %d", msg.data(), msg.size());
 
         if(len <=0 ){
             error("boardcast, len:%d, info:%s, error: errno: %d, %s, server exit", len,
@@ -181,26 +182,15 @@ void boardcast(const string& msg){
 
 }
 
-void handRead(int acFd, char* buf, int len){
+void handRead(int acFd, const string& buf, int len, const string& clientInfo){
     if(len >= 0){
-        string clientInfo;
-        {
-            std::lock_guard<std::mutex> lock(gMtx);
-            auto it = mFdClient.find(acFd);
-            if(it != mFdClient.end())
-                clientInfo = it->second.getClientInfo();
-            else
-                clientInfo = "error client";
-        }
 
         if(0 == len){
             const char *welcome = "%s: good I leave out";
             string msg = util::format(welcome, clientInfo.c_str());
-
-            removeClientFd(acFd);
             boardcast(msg);
         }else{
-            string msg = clientInfo + ": " + string(buf, len);
+            string msg = clientInfo + ": " + buf;
             boardcast(msg);
         }
     } else{
@@ -266,21 +256,34 @@ void test_multi_server(){
         } else{
             for(int fd:sFd){
                 if(FD_ISSET(fd, &fds)){
-                    info("is fd set %d", fd);
                      if(fd == svrFd){
                          struct sockaddr_in raddr;
                          socklen_t rsz = sizeof(raddr);
                          int newCFd = accept(svrFd, (struct sockaddr *) &raddr, &rsz);
-                         info("select return %d events, fd: %d, new accept newFd: ", num, fd, newCFd);
+                         info("select return %d events, fd: %d, new accept newFd: %d", num, fd, newCFd);
 //                         handAccept(newCFd, raddr);
-                         tp.addTask(std::bind(handAccept, newCFd, std::ref(raddr)));
+//                         tp.addTask(std::bind(handAccept, newCFd, std::ref(raddr)));
+                         handAccept(newCFd, raddr);
                      } else{
                          char buf[100];
                          memset(buf, 0, sizeof buf);
                          int len = recv(fd, buf, sizeof buf, 0);
+
+                         string clientInfo;
+                         {
+                             std::lock_guard<std::mutex> lock(gMtx);
+                             auto it = mFdClient.find(fd);
+                             if(it != mFdClient.end())
+                                 clientInfo = it->second.getClientInfo();
+                             else
+                                 clientInfo = "error client";
+                         }
+
+                         if(0 == len)removeClientFd(fd);
+
                          info("select return %d events, fd: %d, new data, len: %d", num, fd, len);
-//                         handRead(fd, buf, len);zzz
-                         tp.addTask(std::bind(handRead, fd, buf, len));
+//                         handRead(fd, buf, len);
+                         tp.addTask(std::bind(handRead, fd, string(buf), len, std::ref(clientInfo)));
                      }
 
                 }
@@ -313,10 +316,34 @@ void test_thread_pool(){
     }
 }
 
+void test_thread_pool_arr(){
+
+    auto lb_print = [](const char* str){
+        info("print msg: %s, and i will sleep 2s", str);
+        sleep(2);
+    };
+
+    ThreadPool tp(3);
+
+    {
+        char arr[100];
+        memset(arr, 1, sizeof arr);
+        tp.addTask(std::bind(lb_print, arr));
+        tp.addTask(std::bind(lb_print, arr));
+    }
+
+    tp.exit();
+    tp.join();
+    info("ending....");
+}
+
+
 int main(){
+    test_thread_pool_arr();
+
 //    test_single_server();
 
-    test_multi_server();
+//    test_multi_server();
 
 //    test_thread_pool();
 

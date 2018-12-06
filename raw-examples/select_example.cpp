@@ -63,14 +63,14 @@ void chat_client(){
 
     fd_set fds;
     timeval tv;
-    const int BUF_SIZE = 200;
+    const int BUF_SIZE = 2000;
 
 
     while(1){
         FD_ZERO(&fds);
         FD_SET(0, &fds);
 
-        tv.tv_sec = 10;
+        tv.tv_sec = 30;
         tv.tv_usec = 1000;
 
         // 把标准输入的文件描述符加入到集合中
