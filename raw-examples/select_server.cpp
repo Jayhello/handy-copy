@@ -279,7 +279,7 @@ void test_multi_server(){
                          memset(buf, 0, sizeof buf);
                          int len = recv(fd, buf, sizeof buf, 0);
                          info("select return %d events, fd: %d, new data, len: %d", num, fd, len);
-//                         handRead(fd, buf, len);
+//                         handRead(fd, buf, len);aaa
                          tp.addTask(std::bind(handRead, fd, buf, len));
                      }
 
