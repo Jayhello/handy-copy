@@ -384,11 +384,11 @@ void test_thread_pool_scope(){
         BindScope bs(4);
         bs.print();
 
-        tp.addTask(std::bind(lb_print, std::ref(bs)));
-        tp.addTask(std::bind(lb_print, std::ref(bs)));
+//        tp.addTask(std::bind(lb_print, std::ref(bs)));
+//        tp.addTask(std::bind(lb_print, std::ref(bs)));
 
-//        tp.addTask(std::bind(lb_print, bs));
-//        tp.addTask(std::bind(lb_print, bs));
+        tp.addTask(std::bind(lb_print, bs));
+        tp.addTask(std::bind(lb_print, bs));
     }
 
     info("out scope");
